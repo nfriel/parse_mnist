@@ -37,6 +37,7 @@ typedef struct {
 } IDX_File;
 
 typedef struct {
+    uint8_t value;
     uint8_t data[D_WIDTH * D_HEIGHT];
 } Digit;
 

@@ -78,19 +78,66 @@ static bool read_mnist_header(const char *path, IDX_File *file)
     return true;
 }
 
-static void cleanup(void)
+static Digit read_mnist_digit(void)
+{
+    int i;
+    Digit d;
+    fread(&d.value, sizeof(uint8_t), 1, mnist_label_file.fp);
+    for (i = 0; i < D_WIDTH * D_HEIGHT; i++) {
+        fread(d.data + i * sizeof(uint8_t), 1, 1, mnist_image_file.fp);
+    }
+    return d;
+}
+
+static void print_mnist_digit(Digit d)
+{
+    int i;
+    printf("%i:\n", (int)d.value);
+    for (i = 0; i < D_WIDTH * D_HEIGHT; i++) {
+        if (d.data[i] > 50) printf("##");
+        else printf("  ");
+        if (i % D_WIDTH == 0) putchar('\n');
+    }
+    putchar('\n');
+}
+
+static void cleanup(Digit *d)
 {
     free(mnist_image_file.size_in_dimension);
     free(mnist_label_file.size_in_dimension);
+    free(d);
     fclose(mnist_image_file.fp);
     fclose(mnist_label_file.fp);
 }
 
+static Digit *read_mnist_files(const char *img_path, const char *label_path)
+{
+    int i, digit_count;
+    Digit *d;
+
+    read_mnist_header(img_path, &mnist_image_file);
+    read_mnist_header(label_path, &mnist_label_file);
+    digit_count = mnist_image_file.size_in_dimension[0];
+    d = malloc(sizeof(Digit) * digit_count);
+    for (i = 0; i < digit_count; i++) {
+        d[i] = read_mnist_digit();
+    }
+
+    return d;
+}
+
+static void render_mnist_digits(Digit *d, int start, int stop)
+{
+    int i;
+    for (i = start; i < stop; i++) {
+        print_mnist_digit(d[i]);
+    }
+}
+
 void test(void)
 {
-    read_mnist_header("./assets/train-images-idx3-ubyte",
-            &mnist_image_file);  
-    read_mnist_header("./assets/train-labels-idx1-ubyte",
-            &mnist_label_file);  
-    cleanup();
+    Digit *d;
+    d = read_mnist_files("./assets/train-images-idx3-ubyte", "./assets/train-labels-idx1-ubyte");
+    render_mnist_digits(d, 0, 10);
+    cleanup(d);
 }
