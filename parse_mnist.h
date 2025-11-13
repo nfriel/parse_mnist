@@ -41,6 +41,9 @@ typedef struct {
     uint8_t data[D_WIDTH * D_HEIGHT];
 } Digit;
 
+Digit *read_mnist_files(const char *img_path, const char *label_path);
+void render_mnist_digits_console(Digit *d, int start, int stop);
+void cleanup(Digit *d);
 void test(void);
 
 #endif /* PARSE_MNIST_H_ */

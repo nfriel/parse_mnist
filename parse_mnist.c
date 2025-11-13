@@ -3,9 +3,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 static IDX_File mnist_image_file;
 static IDX_File mnist_label_file;
+
+static char *brush = " `.-+=#$";
 
 static const char *get_datatype_string(uint8_t type)
 {
@@ -89,28 +92,36 @@ static Digit read_mnist_digit(void)
     return d;
 }
 
-static void print_mnist_digit(Digit d)
+static void print_mnist_digit(Digit d, bool opaque)
 {
-    int i;
+    int i, o, brush_size;
+    float opacity;
+
     printf("%i:\n", (int)d.value);
-    for (i = 0; i < D_WIDTH * D_HEIGHT; i++) {
-        if (d.data[i] > 50) printf("##");
-        else printf("  ");
-        if (i % D_WIDTH == 0) putchar('\n');
+    if (opaque) {
+        for (i = 0; i < D_WIDTH * D_HEIGHT; i++) {
+            if (d.data[i] > 50) printf("##");
+            else printf("  ");
+            if (i % D_WIDTH == 0) putchar('\n');
+        }
+        putchar('\n');
+    } else {
+        brush_size = strlen(brush);
+        for (i = 0; i < D_WIDTH * D_HEIGHT; i++) {
+            if (d.data[i] > 10) {
+                opacity = ((float) d.data[i] / 255) * brush_size;
+                printf("%c%c", brush[(int)opacity], brush[(int)opacity]);
+            } else {
+                printf("  ");
+            }
+            if (i % D_WIDTH == 0) putchar('\n');
+        }
+        putchar('\n');
+
     }
-    putchar('\n');
 }
 
-static void cleanup(Digit *d)
-{
-    free(mnist_image_file.size_in_dimension);
-    free(mnist_label_file.size_in_dimension);
-    free(d);
-    fclose(mnist_image_file.fp);
-    fclose(mnist_label_file.fp);
-}
-
-static Digit *read_mnist_files(const char *img_path, const char *label_path)
+Digit *read_mnist_files(const char *img_path, const char *label_path)
 {
     int i, digit_count;
     Digit *d;
@@ -126,18 +137,27 @@ static Digit *read_mnist_files(const char *img_path, const char *label_path)
     return d;
 }
 
-static void render_mnist_digits(Digit *d, int start, int stop)
+void render_mnist_digits_console(Digit *d, int start, int stop)
 {
     int i;
     for (i = start; i < stop; i++) {
-        print_mnist_digit(d[i]);
+        print_mnist_digit(d[i], false);
     }
+}
+
+void cleanup(Digit *d)
+{
+    free(mnist_image_file.size_in_dimension);
+    free(mnist_label_file.size_in_dimension);
+    free(d);
+    fclose(mnist_image_file.fp);
+    fclose(mnist_label_file.fp);
 }
 
 void test(void)
 {
     Digit *d;
     d = read_mnist_files("./assets/train-images-idx3-ubyte", "./assets/train-labels-idx1-ubyte");
-    render_mnist_digits(d, 0, 10);
+    render_mnist_digits_console(d, 0, 10);
     cleanup(d);
 }
